@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="myProject" default="prod" basedir=".">
+
+    <description>JS/CSS production build for myProject</description>
+
+    <target name="-load.properties"
+        description="Sets global properties for this build">	
+        <!--YUI Compressor location-->
+        <property name="yui.dir" value="C:/yui/build/yuicompressor-2.4.2.jar"/>
+        <!--Source JS dir-->
+        <property name="src.js.dir" value="C:/dev/src/myProject/js"/>
+        <!--Source CSS dir-->
+        <property name="src.css.dir" value="C:/dev/src/myProject/css"/>
+        <!--Output dir-->
+        <property name="build.dir" value="build"/>
+    </target>
+
+    <!--Create build dirs-->
+    <target name="-init" depends="-load.properties"
+        description="Creates build directory structure">
+        <!--Create the time stamp-->
+        <tstamp>
+            <format property="TODAY" pattern="EEE, d MMM yyyy HH:mm:ss Z"/>
+        </tstamp>
+        <!--Delete previous build files-->
+        <delete dir="${build.dir}"/>
+        <!--Recreate build dirs-->
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${build.dir}/js"/>
+        <mkdir dir="${build.dir}/css"/>
+        <!--Write build time stamp into a file-->
+        <echo file="${build.dir}/js/tstamp.txt" append="false">Build Date: ${TODAY}</echo>
+        <echo file="${build.dir}/css/tstamp.txt" append="false">Build Date: ${TODAY}</echo>
+    </target>
+
+    <!--Concatenate JS files-->
+    <target name="-js.concatenate" depends="-init" 
+        description="Concatenates specified JavaScript files">
+        <concat destfile="${build.dir}/js/concat.js">
+            <!--The files first.js and second.js should be first in the concatenated file-->
+            <filelist 
+                dir="${src.js.dir}" 
+                files="first.js, second.js"/>
+            <!--All of the other files in the directory, with the exception of first.js and second.js, should be added afterwards.-->
+            <fileset 
+                dir="${src.js.dir}"
+                includes="*.js" 
+                excludes="first.js, second.js"/>
+        </concat>
+        <echo>Done!</echo>
+    </target>
+
+    <!--Concatenate CSS files-->
+    <target name="-css.concatenate" depends="-init" 
+        description="Concatenates specified CSS files">
+        <concat destfile="${build.dir}/css/concat.css">
+            <!--The files first.css and second.css should be first in the concatenated file-->
+            <filelist 
+                dir="${src.css.dir}" 
+                files="first.css, second.css"/>
+            <!--All of the other files in the directory, with the exception of first.css and second.css, should be added afterwards.-->
+            <fileset 
+                dir="${src.css.dir}"
+                includes="*.css" 
+                excludes="first.css, second.css"/>
+        </concat>
+        <echo>Done!</echo>
+    </target>
+
+    <!--Minify JS files-->
+    <target name="-js.minify" depends="-js.concatenate" 
+        description="Minifies JavaScript files">
+        <apply executable="java" parallel="false">
+            <fileset 
+                dir="${build.dir}/js" 
+                includes="concat.js"/>
+            <arg line="-jar"/>
+            <arg path="${yui.dir}"/>
+            <srcfile/>
+            <arg line="-o"/>
+            <mapper type="glob" from="*.js" to="${build.dir}/js/*-min.js"/>
+            <targetfile/>
+        </apply>
+        <echo>Done!</echo>
+    </target>
+
+    <!--Minify CSS files-->
+    <target name="-css.minify" depends="-css.concatenate" 
+        description="Minifies CSS files">
+        <apply executable="java" parallel="false">
+            <fileset 
+                dir="${build.dir}/css" 
+                includes="concat.css"/>
+            <arg line="-jar"/>
+            <arg path="${yui.dir}"/>
+            <arg line="--line-break 0"/>
+            <srcfile/>
+            <arg line="-o"/>
+            <mapper type="glob" from="*.css" to="${build.dir}/css/*-min.css"/>
+            <targetfile/>
+        </apply>
+        <echo>Done!</echo>
+    </target>
+
+    <!--Build-->
+    <target name="prod" 
+        description="Builds files for production"
+        depends="
+            -load.properties, 
+            -init, 
+            -js.concatenate, 
+            -css.concatenate, 
+            -js.minify, 
+            -css.minify">
+    </target>
+</project>
+
